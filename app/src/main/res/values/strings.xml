@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">SolarisNavi</string>
+    <string name="speed_label">Speed</string>
+    <string name="speed_measure">km/h</string>
+    <string name="course_label">Course:</string>
+    <string name="accuracy_label">Accuracy:</string>
+    <string name="tracking_source_label">Tracking:</string>
+</resources>

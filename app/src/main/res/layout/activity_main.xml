@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/mainContainer"
+    android:animateLayoutChanges="true"
+    android:fitsSystemWindows="true"
+    android:background="@android:color/darker_gray"
+    tools:context="com.example.stefantiess.solarisnavi.MainActivity">
+
+    <android.support.design.widget.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/MyMaterialTheme">
+
+
+
+    </android.support.design.widget.AppBarLayout>
+
+    <include layout="@layout/map_view" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/center_on_position"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="152dp"
+        android:layout_marginRight="24dp"
+        android:src="@drawable/ic_location"
+        android:tint="@color/colorPrimaryDark"
+        app:backgroundTint="@color/colorAccent" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/zoom_in"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="88dp"
+        android:layout_marginRight="24dp"
+        android:src="@drawable/ic_plus_size"
+        android:tint="@color/colorPrimaryDark"
+        app:backgroundTint="@color/colorAccent" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/zoom_out"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="24dp"
+        android:src="@drawable/ic_minus"
+        android:tint="@color/colorPrimaryDark"
+        app:backgroundTint="@color/colorAccent" />
+
+    <android.support.v7.widget.CardView
+        android:id="@+id/dashboardContainer"
+        android:visibility="gone"
+        android:layout_width="120dp"
+        android:layout_height="184dp"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="24dp"
+        app:cardElevation="6dp"
+        app:cardCornerRadius="3dp"
+        android:background="@android:color/white">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <TextView
+                android:id="@+id/speed_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/speed_label"
+                android:layout_margin="4dp"
+                android:gravity="top|start"/>
+
+            <TextView
+                android:id="@+id/speed_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/speed_label"
+                android:layout_centerHorizontal="true"
+                android:layout_margin="4dp"
+                android:textSize="36sp"
+                android:textStyle="bold"
+                tools:text="8.4" />
+
+            <TextView
+                android:id="@+id/speed_unit_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignBaseline="@id/speed_text_view"
+                android:layout_marginStart="-4dp"
+                android:layout_toEndOf="@id/speed_text_view"
+                android:text="@string/speed_measure"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/direction_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/course_label"
+                android:layout_margin="4dp"
+                android:layout_alignParentLeft="true"
+                android:layout_below="@id/speed_text_view"
+
+                />
+            <TextView
+                android:id="@+id/direction_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="31° NE"
+                android:textStyle="bold"
+                android:layout_margin="4dp"
+                android:layout_below="@id/speed_text_view"
+                android:layout_alignParentRight="true"
+                />
+            <TextView
+                android:id="@+id/accuracy_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/accuracy_label"
+                android:layout_margin="4dp"
+                android:layout_alignParentLeft="true"
+                android:layout_below="@id/direction_label"
+
+                />
+            <TextView
+                android:id="@+id/accuracy_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="3,0m"
+                android:textStyle="bold"
+                android:layout_margin="4dp"
+                android:layout_below="@id/direction_text_view"
+                android:layout_alignParentRight="true"
+                />
+
+            <TextView
+                android:id="@+id/locationsource_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/tracking_source_label"
+                android:layout_margin="4dp"
+                android:layout_alignParentLeft="true"
+                android:layout_below="@id/accuracy_label"
+
+                />
+            <TextView
+                android:id="@+id/locationsource_text_view"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="GPS"
+                android:textStyle="bold"
+                android:layout_margin="4dp"
+                android:layout_below="@id/accuracy_text_view"
+                android:layout_alignParentRight="true"
+                />
+
+
+
+        </RelativeLayout>
+    </android.support.v7.widget.CardView>
+
+
+</android.support.design.widget.CoordinatorLayout>
