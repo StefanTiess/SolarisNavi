@@ -22,6 +22,19 @@
     <include layout="@layout/map_view" />
 
     <android.support.design.widget.FloatingActionButton
+        android:id="@+id/remove_waypoint"
+        android:visibility="gone"
+        tools:visibility="visible"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="24dp"
+        android:layout_marginRight="24dp"
+        android:src="@drawable/ic_remove_waypoint"
+        android:tint="@color/colorPrimaryDark"
+        app:backgroundTint="@android:color/holo_red_light" />
+
+    <android.support.design.widget.FloatingActionButton
         android:id="@+id/center_on_position"
         android:layout_width="56dp"
         android:layout_height="56dp"
@@ -55,24 +68,26 @@
 
     <android.support.v7.widget.CardView
         android:id="@+id/dashboardContainer"
-        android:visibility="gone"
         android:layout_width="120dp"
         android:layout_height="184dp"
         android:layout_gravity="bottom|start"
         android:layout_margin="24dp"
-        app:cardElevation="6dp"
+        android:background="@android:color/white"
+        android:visibility="visible"
         app:cardCornerRadius="3dp"
-        android:background="@android:color/white">
+        app:cardElevation="6dp">
+
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
+
             <TextView
                 android:id="@+id/speed_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/speed_label"
                 android:layout_margin="4dp"
-                android:gravity="top|start"/>
+                android:gravity="top|start"
+                android:text="@string/speed_label" />
 
             <TextView
                 android:id="@+id/speed_text_view"
@@ -99,68 +114,128 @@
                 android:id="@+id/direction_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/course_label"
-                android:layout_margin="4dp"
                 android:layout_alignParentLeft="true"
                 android:layout_below="@id/speed_text_view"
+                android:layout_margin="4dp"
+                android:text="@string/course_label"
 
                 />
+
             <TextView
                 android:id="@+id/direction_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                tools:text="31° NE"
-                android:textStyle="bold"
-                android:layout_margin="4dp"
-                android:layout_below="@id/speed_text_view"
                 android:layout_alignParentRight="true"
-                />
+                android:layout_below="@id/speed_text_view"
+                android:layout_margin="4dp"
+                android:textStyle="bold"
+                tools:text="31° NE" />
+
             <TextView
                 android:id="@+id/accuracy_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/accuracy_label"
-                android:layout_margin="4dp"
                 android:layout_alignParentLeft="true"
                 android:layout_below="@id/direction_label"
+                android:layout_margin="4dp"
+                android:text="@string/accuracy_label"
 
                 />
+
             <TextView
                 android:id="@+id/accuracy_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                tools:text="3,0m"
-                android:textStyle="bold"
-                android:layout_margin="4dp"
-                android:layout_below="@id/direction_text_view"
                 android:layout_alignParentRight="true"
-                />
+                android:layout_below="@id/direction_text_view"
+                android:layout_margin="4dp"
+                android:textStyle="bold"
+                tools:text="3,0m" />
 
             <TextView
                 android:id="@+id/locationsource_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/tracking_source_label"
-                android:layout_margin="4dp"
                 android:layout_alignParentLeft="true"
                 android:layout_below="@id/accuracy_label"
+                android:layout_margin="4dp"
+                android:text="@string/tracking_source_label"
 
                 />
+
             <TextView
                 android:id="@+id/locationsource_text_view"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                tools:text="GPS"
-                android:textStyle="bold"
-                android:layout_margin="4dp"
-                android:layout_below="@id/accuracy_text_view"
                 android:layout_alignParentRight="true"
-                />
-
+                android:layout_below="@id/accuracy_text_view"
+                android:layout_margin="4dp"
+                android:textStyle="bold"
+                tools:text="GPS" />
 
 
         </RelativeLayout>
     </android.support.v7.widget.CardView>
 
+    <android.support.v7.widget.CardView
+        android:id="@+id/waypointContainer"
+        android:layout_width="120dp"
+        android:layout_height="100dp"
+        android:layout_gravity="top|start"
+        android:layout_margin="24dp"
+        android:background="@android:color/white"
+        android:visibility="visible"
+        app:cardCornerRadius="3dp"
+        app:cardElevation="6dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/distance_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="4dp"
+        android:gravity="top|start"
+        android:text="@string/distance_label" />
+
+    <TextView
+        android:id="@+id/distance_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/distance_label"
+        android:layout_centerHorizontal="true"
+        android:layout_margin="4dp"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="8.4" />
+
+
+
+    <TextView
+        android:id="@+id/timeToArrival_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/distance_text_view"
+        android:layout_margin="4dp"
+        android:text="@string/timeToArrival_label"
+
+        />
+
+    <TextView
+        android:id="@+id/timeToArrival_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/distance_text_view"
+        android:layout_margin="4dp"
+        android:textStyle="bold"
+        tools:text="31° NE" />
+
+
+    </RelativeLayout>
+    </android.support.v7.widget.CardView>
 
 </android.support.design.widget.CoordinatorLayout>

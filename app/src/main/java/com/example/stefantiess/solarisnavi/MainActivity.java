@@ -8,41 +8,36 @@ import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.location.LocationProvider;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
 import android.util.Log;
-import android.view.DragEvent;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
-import android.view.PointerIcon;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.events.MapEventsReceiver;
-import org.osmdroid.events.MapListener;
-import org.osmdroid.events.ScrollEvent;
-import org.osmdroid.events.ZoomEvent;
 import org.osmdroid.tileprovider.MapTileProviderBasic;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MapEventsOverlay;
 import org.osmdroid.views.overlay.Marker;
-import org.osmdroid.views.overlay.OverlayManager;
+import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.TilesOverlay;
+import org.osmdroid.views.overlay.infowindow.InfoWindow;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
@@ -50,6 +45,7 @@ public class MainActivity extends Activity {
     IMapController mapController = null;
     Double zoomLevel = 18.0; //initial zoom level
     GeoPoint startPoint = new GeoPoint(52.366988, 13.643645);
+    GeoPoint currentPosition = startPoint;
     private static final int LOCATION_PERMISSION_CODE = 123;
     private boolean hasLocationPermission = false;
     private boolean viewIsCentered = true;
@@ -60,9 +56,34 @@ public class MainActivity extends Activity {
     TextView directionLabel = null;
     TextView accuracyLabel = null;
     TextView sourceLabel = null;
+    TextView distanceLabel = null;
+    TextView timeToArrivalLabel = null;
+    CardView waypointContainer =null;
     CoordinatorLayout containerView;
     CardView dashboardView;
     AccuracyOverlay accuracyOverlay = null;
+    ArrayList<Marker> markerList = new ArrayList<>();
+    Polyline routeLine = new Polyline();
+    FloatingActionButton removeWaypointButton;
+
+
+    View.OnClickListener removeSingleWaypointListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            removeLastWaypoint();
+        }
+    };
+
+    View.OnLongClickListener removeAllWaypointsListener = new View.OnLongClickListener() {
+        @Override
+        public boolean onLongClick(View v) {
+            removeAllWaypoints();
+            waypointContainer.setVisibility(View.GONE);
+            return false;
+        }
+    };
+
+
 
 
 
@@ -86,6 +107,7 @@ public class MainActivity extends Activity {
         FloatingActionButton zoomInButton = findViewById(R.id.zoom_in);
         FloatingActionButton zoomOutButton = findViewById(R.id.zoom_out);
         FloatingActionButton centerViewButton = findViewById(R.id.center_on_position);
+        removeWaypointButton = findViewById(R.id.remove_waypoint);
 
         // Set button Listeners
         zoomInButton.setOnClickListener(new View.OnClickListener() {
@@ -113,9 +135,12 @@ public class MainActivity extends Activity {
          directionLabel = findViewById(R.id.direction_text_view);
          accuracyLabel = findViewById(R.id.accuracy_text_view);
          sourceLabel = findViewById(R.id.locationsource_text_view);
-
+         distanceLabel = findViewById(R.id.distance_text_view);
+         timeToArrivalLabel = findViewById(R.id.timeToArrival_text_view);
+         waypointContainer = findViewById(R.id.waypointContainer);
          containerView = findViewById(R.id.mainContainer);
          dashboardView =  findViewById(R.id.dashboardContainer);
+         waypointContainer.setVisibility(View.GONE);
 
          //now the ui should be initiated and follow the users location
     }
@@ -129,6 +154,7 @@ public class MainActivity extends Activity {
      */
     public void updateLocation() {
         IMapController mapController = map.getController();
+        currentPosition = loc.getCurrentPosition();
 
         /*
         if (accuracyOverlay == null) {
@@ -148,7 +174,7 @@ public class MainActivity extends Activity {
         if (boatMarker == null) {
             boatMarker = new Marker(map);
             boatMarker.setIcon(getDrawable(R.drawable.ic_boat_marker_20));
-            boatMarker.setPosition(loc.getCurrentPosition());
+            boatMarker.setPosition(currentPosition);
             boatMarker.setAnchor(Marker.ANCHOR_CENTER,Marker.ANCHOR_CENTER);
             map.getOverlays().add(boatMarker);
         }
@@ -195,6 +221,9 @@ public class MainActivity extends Activity {
             mapController.setCenter(loc.getCurrentPosition());
         }
 
+        if (markerList.size() > 0) {
+            drawMarkers();
+        }
 
     }
 
@@ -242,7 +271,7 @@ public class MainActivity extends Activity {
 
             @Override
             public boolean longPressHelper(GeoPoint p) {
-                addPostionMarker(p);
+                addPositionMarker(p);
                 return false;
             }
         };
@@ -332,10 +361,6 @@ public class MainActivity extends Activity {
         map.onPause();  //needed for compass, my location overlays, v6.0.0 and up
     }
 
-    public void drawAccuracyCircle(float radius) {
-
-    }
-
     private String parseCardinalDirection(float d) {
         String directionStr = "";
         if (d >= 337.5 || d < 22.5) directionStr += "° N";
@@ -349,18 +374,163 @@ public class MainActivity extends Activity {
         return directionStr;
     }
 
-    private void addPostionMarker(GeoPoint p) {
+    private void addPositionMarker(GeoPoint p) {
+
         Marker marker = new Marker(map);
         marker.setPosition(p);
 
-        marker.setIcon(getDrawable(R.drawable.direction_arrow));
-        marker.setAnchor(Marker.ANCHOR_CENTER,Marker.ANCHOR_CENTER);
-        map.getOverlays().add(marker);
+        marker.setIcon(getDrawable(R.drawable.ic_position_marker));
+        marker.setAnchor(Marker.ANCHOR_CENTER,Marker.ANCHOR_BOTTOM);
+
+        if (markerList.size() == 0) {
+            removeWaypointButton.setVisibility(View.VISIBLE);
+            waypointContainer.setVisibility(View.VISIBLE);
+            removeWaypointButton.setOnClickListener(removeSingleWaypointListener);
+            removeWaypointButton.setOnLongClickListener(removeAllWaypointsListener);
+        }
+
+        markerList.add(marker);
+
+        drawMarkers();
+
+
+
+    }
+
+    private void removeLastWaypoint() {
+        if (markerList.size() > 0 ) {
+            Marker lastMarker = markerList.get(markerList.size() - 1);
+            map.getOverlays().remove(lastMarker);
+            markerList.remove(lastMarker);
+            drawMarkers();
+        }
+        if (markerList.size() == 0) {
+            removeWaypointButton.setVisibility(View.GONE);
+            waypointContainer.setVisibility(View.GONE);
+        }
+    }
+
+    private void removeAllWaypoints() {
+
+            map.getOverlays().removeAll(markerList);
+            markerList.clear();
+
+            map.getOverlays().remove(routeLine);
+
+
+            map.invalidate();
+
+            removeWaypointButton.setVisibility(View.GONE);
+
+    }
+
+    private void drawMarkers() {
+
+        double totalDistance = 0;
+        double timeToArrival = 0;
+        List<GeoPoint> route = new ArrayList<GeoPoint>();
+        Date expectedTimeOfArrival = new Date();
+        GeoPoint currentMarkerPosition = startPoint;
+        GeoPoint lastMarkerPosition = startPoint;
+
+        if (markerList.size() == 0) {
+           if (map.getOverlays().contains(routeLine)) {
+               routeLine.setPoints(route);
+
+
+           }
+
+        }
+        else {
+            for (int i = 0; i < markerList.size(); i++) {
+                Marker marker = markerList.get(i);
+                //first Marker
+                if (i == 0) {
+                    route.add(currentPosition);
+                    currentMarkerPosition = marker.getPosition();
+                    totalDistance = currentPosition.distanceToAsDouble(currentMarkerPosition);
+                    lastMarkerPosition = currentMarkerPosition;
+
+
+                }
+                //Last marker
+                else if (i == markerList.size() - 1) {
+                    currentMarkerPosition = marker.getPosition();
+                    totalDistance += currentMarkerPosition.distanceToAsDouble(lastMarkerPosition);
+
+
+                }
+
+                //markers in between
+                else {
+                    currentMarkerPosition = marker.getPosition();
+                    totalDistance += currentMarkerPosition.distanceToAsDouble(lastMarkerPosition);
+                    lastMarkerPosition = currentMarkerPosition;
+
+                }
+
+
+                if (!map.getOverlays().contains(marker)) {
+                    map.getOverlays().add(marker);
+                }
+                route.add(currentMarkerPosition);
+
+
+                // go through all existing markers
+                // - calculate total distance
+                // - calculate time to arrival
+
+                //update line to first marker
+
+                //add missing markers
+
+                //display Infobox next to last marker
+
+                //check for exisiting Markers
+
+            }
+            //time to arrival
+            double avgSpeed = loc.getAverageSpeedInKmh() / 3.6;
+            if (avgSpeed > 0) {
+                timeToArrival =  avgSpeed / totalDistance;
+
+            }
+            //calculate time at arrival
+            Date now = new Date();
+            long timeAtArrival = now.getTime() + (long) timeToArrival;
+            expectedTimeOfArrival.setTime(timeAtArrival);
+
+            String distanceString = String.valueOf(Math.round(totalDistance)) + "m";
+            String timeToArrivalString = String.valueOf(timeToArrival * 1000) + "s" ;
+            waypointContainer.setVisibility(View.VISIBLE);
+            distanceLabel.setText(distanceString);
+
+            timeToArrivalLabel.setText(timeToArrivalString);
+
+
+            routeLine.setColor(Color.GREEN);
+            routeLine.setPoints(route);
+            routeLine.setInfoWindowLocation(currentMarkerPosition);
+
+
+            if (!map.getOverlays().contains(routeLine)) {map.getOverlays().add(routeLine);}
+
+        }
+
         map.invalidate();
+
 
     }
 
     private void addDashboard() {
         dashboardView.setVisibility(View.VISIBLE);
     }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        //TODO save important variabes for screen rotation
+    }
+
+
 }

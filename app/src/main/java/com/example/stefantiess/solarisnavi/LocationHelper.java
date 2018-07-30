@@ -3,6 +3,7 @@ package com.example.stefantiess.solarisnavi;
 
 import android.location.Location;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.osmdroid.util.GeoPoint;
 
@@ -12,6 +13,7 @@ public class LocationHelper {
     private float mAccuracy;
     private float mDirection;
     private double mSpeedInKmh;
+    private double mAverageSpeed;
     private String locationSource;
     private String updateMessage = "";
     private GeoPoint mCurrentPosition = new GeoPoint(0.0, 0.0);
@@ -31,8 +33,8 @@ public class LocationHelper {
             lastLocations.add(location);
 
         }
-        //keep 10 last Locations
-        if (lastLocations.size()>10) {
+        //keep 5 last Locations
+        if (lastLocations.size()>5) {
             lastLocations.remove(0);
         }
         // After checking the locations array, the best location is always the last one.
@@ -41,8 +43,15 @@ public class LocationHelper {
         mAccuracy = location.getAccuracy();
         mDirection = location.getBearing();
         mSpeedInKmh = (location.getSpeed() * 3.6);
+
         mCurrentPosition = new GeoPoint(location);
         updateMessage = "Source: " + locationSource + ", Speed: " + mSpeedInKmh + "km/h, Direction: " + mDirection + "°, Accuracy: " + mAccuracy + "m.";
+        double speedsum = 0;
+        for (Location loc:lastLocations) {
+            speedsum += loc.getSpeed();
+        }
+        mAverageSpeed = speedsum / lastLocations.size();
+
 
 
     }
@@ -57,6 +66,11 @@ public class LocationHelper {
 
     public double getSpeedInKmh() {
         return mSpeedInKmh;
+    }
+
+    public double getAverageSpeedInKmh() {
+
+        return mAverageSpeed;
     }
 
     public String getLocationSource() {
@@ -85,16 +99,21 @@ public class LocationHelper {
             // meters per second is larger than than the new accuracy, the new location must still be better.
             float distance = newLoc.distanceTo(lastLoc);
             float accuracy = newLoc.getAccuracy();
-            long newTime = newLoc.getTime();
-            long oldTime = lastLoc.getTime();
+            long timeElapsed = newLoc.getElapsedRealtimeNanos() - lastLoc.getElapsedRealtimeNanos();
             // if accuracy is better, than the location is better
-            if (newLoc.getAccuracy() <= lastLoc.getAccuracy()) { return true;}
+            if (accuracy <= lastLoc.getAccuracy()) { return true;}
             // If the accurracy is very close though, keep it for the sake of update frequency
-            if (newLoc.getAccuracy() < 8.0) {return true;}
+            if (accuracy < 8.0) {return true;}
+            //if there has been a gps position in the last 5 seconds, scrape incoming "network" positions since they lack accuracy
+            else if ((newLoc.getProvider().equals("network")) && (lastLoc.getProvider().equals("gps")) && (timeElapsed < 5000)) {
+                return false;}
+
             // if the distance between locations is greater than the accuracy, the new one is still closer to the true loc
-            else if (distance > accuracy) {return true;}
+
+            //else if (distance > accuracy) {return true;}
             // if the old location is older than 5 seconds, then keep the new one anyway
-            else if (newTime-oldTime > 5000) {return true;}
+            else if (timeElapsed > 5000) {return true;}
+
             // else the old location is still better than the new one
             else return false;
 

@@ -5,4 +5,6 @@
     <string name="course_label">Course:</string>
     <string name="accuracy_label">Accuracy:</string>
     <string name="tracking_source_label">Tracking:</string>
+    <string name="distance_label">Distance</string>
+    <string name="timeToArrival_label">Arrival in</string>
 </resources>
