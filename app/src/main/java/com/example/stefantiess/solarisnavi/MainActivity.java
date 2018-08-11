@@ -35,12 +35,16 @@ import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.TilesOverlay;
 import org.osmdroid.views.overlay.infowindow.InfoWindow;
 
+import java.text.DateFormat;
+import java.text.Format;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
+    private static final String TAG = "MainActivity";
     MapView map = null;
     IMapController mapController = null;
     Double zoomLevel = 18.0; //initial zoom level
@@ -58,12 +62,13 @@ public class MainActivity extends Activity {
     TextView sourceLabel = null;
     TextView distanceLabel = null;
     TextView timeToArrivalLabel = null;
+    TextView timeAtArrivalLabel =null;
     CardView waypointContainer =null;
     CoordinatorLayout containerView;
     CardView dashboardView;
     AccuracyOverlay accuracyOverlay = null;
     ArrayList<Marker> markerList = new ArrayList<>();
-    Polyline routeLine = new Polyline();
+    Polyline routeLine = null;
     FloatingActionButton removeWaypointButton;
 
 
@@ -90,6 +95,8 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+
+
         //handle permissions first
         getLocationPermission();
 
@@ -99,15 +106,37 @@ public class MainActivity extends Activity {
 
         //inflate the Map View
         setContentView(R.layout.activity_main);
-
-        //Configure the map and set up the location Service
-        initializeMap();
-
+        map = (MapView) findViewById(R.id.map);
         //add Buttons
         FloatingActionButton zoomInButton = findViewById(R.id.zoom_in);
         FloatingActionButton zoomOutButton = findViewById(R.id.zoom_out);
         FloatingActionButton centerViewButton = findViewById(R.id.center_on_position);
         removeWaypointButton = findViewById(R.id.remove_waypoint);
+
+        //Initialize Dashboard
+        speedLabel = findViewById(R.id.speed_text_view);
+        directionLabel = findViewById(R.id.direction_text_view);
+        accuracyLabel = findViewById(R.id.accuracy_text_view);
+        sourceLabel = findViewById(R.id.locationsource_text_view);
+        distanceLabel = findViewById(R.id.distance_text_view);
+        timeToArrivalLabel = findViewById(R.id.timeToArrival_text_view);
+        timeAtArrivalLabel = findViewById(R.id.timeAtArrival_text_view);
+        waypointContainer = findViewById(R.id.waypointContainer);
+        containerView = findViewById(R.id.mainContainer);
+        dashboardView =  findViewById(R.id.dashboardContainer);
+        waypointContainer.setVisibility(View.GONE);
+
+        routeLine = new Polyline();
+
+
+
+        if (savedInstanceState != null) {
+            restoreState(savedInstanceState);
+            drawMarkers();
+
+        }
+        //Configure the map and set up the location Service
+        initializeMap();
 
         // Set button Listeners
         zoomInButton.setOnClickListener(new View.OnClickListener() {
@@ -130,17 +159,6 @@ public class MainActivity extends Activity {
             }
         });
 
-        //Initialize Dashboard
-         speedLabel = findViewById(R.id.speed_text_view);
-         directionLabel = findViewById(R.id.direction_text_view);
-         accuracyLabel = findViewById(R.id.accuracy_text_view);
-         sourceLabel = findViewById(R.id.locationsource_text_view);
-         distanceLabel = findViewById(R.id.distance_text_view);
-         timeToArrivalLabel = findViewById(R.id.timeToArrival_text_view);
-         waypointContainer = findViewById(R.id.waypointContainer);
-         containerView = findViewById(R.id.mainContainer);
-         dashboardView =  findViewById(R.id.dashboardContainer);
-         waypointContainer.setVisibility(View.GONE);
 
          //now the ui should be initiated and follow the users location
     }
@@ -154,29 +172,16 @@ public class MainActivity extends Activity {
      */
     public void updateLocation() {
         IMapController mapController = map.getController();
+        if (loc == null) {return;}
+
         currentPosition = loc.getCurrentPosition();
-
-        /*
-        if (accuracyOverlay == null) {
-            accuracyOverlay = new AccuracyOverlay(loc.getCurrentPosition(), loc.getAccuracy());
-            map.getOverlays().add(accuracyOverlay);
-        }
-        else     {
-            accuracyOverlay.updateAccuracyOverlay(loc.getCurrentPosition(), loc.getAccuracy());
-        }*/
-
-
 
         if (dashboardView.getVisibility() == View.GONE) {
             addDashboard();
         }
         //Update the boat markers position and direction
         if (boatMarker == null) {
-            boatMarker = new Marker(map);
-            boatMarker.setIcon(getDrawable(R.drawable.ic_boat_marker_20));
-            boatMarker.setPosition(currentPosition);
-            boatMarker.setAnchor(Marker.ANCHOR_CENTER,Marker.ANCHOR_CENTER);
-            map.getOverlays().add(boatMarker);
+            createBoatMarker(currentPosition);
         }
         else {
             boatMarker.setPosition(loc.getCurrentPosition());
@@ -208,12 +213,7 @@ public class MainActivity extends Activity {
             accuracyLabel.setTextColor(Color.parseColor("#005900"));
         }
         else accuracyLabel.setTextColor(Color.parseColor("#ffffff"));
-        /*
-        if (map.getZoomLevelDouble() < 20) {
-            drawAccuracyCircle(loc.getAccuracy());
-        }
-        else drawAccuracyCircle(0);
-        */
+
         directionLabel.setText(directionStr);
         sourceLabel.setText(loc.getLocationSource());
 
@@ -227,6 +227,14 @@ public class MainActivity extends Activity {
 
     }
 
+    private void createBoatMarker(GeoPoint position) {
+        boatMarker = new Marker(map);
+        boatMarker.setIcon(getDrawable(R.drawable.ic_boat_marker_20));
+        boatMarker.setPosition(position);
+        boatMarker.setAnchor(Marker.ANCHOR_CENTER,Marker.ANCHOR_CENTER);
+        map.getOverlays().add(boatMarker);
+    }
+
     private void initializeMap() {
 
         // Set up Open Sea Map Overlays
@@ -238,7 +246,7 @@ public class MainActivity extends Activity {
         mProvider.setTileSource(TileSourceFactory.OPEN_SEAMAP);
 
         //Configure Base Map View
-        map = (MapView) findViewById(R.id.map);
+
         map.setTileSource(TileSourceFactory.HIKEBIKEMAP);
         map.setMaxZoomLevel(18.0);
         map.setBuiltInZoomControls(false);
@@ -279,7 +287,7 @@ public class MainActivity extends Activity {
         map.getOverlays().add(eventsOverlay);
 
 
-        mapController.setCenter(startPoint);
+        mapController.setCenter(currentPosition);
 
     }
 
@@ -349,7 +357,7 @@ public class MainActivity extends Activity {
         //if you make changes to the configuration, use
         //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         //Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this));
-        map.onResume(); //needed for compass, my location overlays, v6.0.0 and up
+        if (map != null) {map.onResume();} //needed for compass, my location overlays, v6.0.0 and up
     }
 
     public void onPause(){
@@ -432,7 +440,15 @@ public class MainActivity extends Activity {
         Date expectedTimeOfArrival = new Date();
         GeoPoint currentMarkerPosition = startPoint;
         GeoPoint lastMarkerPosition = startPoint;
+        if (map == null) {
+         return;
+        }
 
+        //if there is still an old routLine, that does not belong to the app, ignore it
+
+
+
+        //If all Points are deleted, but there is still a routeLine on the Map, remove the routeLine
         if (markerList.size() == 0) {
            if (map.getOverlays().contains(routeLine)) {
                routeLine.setPoints(route);
@@ -475,45 +491,45 @@ public class MainActivity extends Activity {
                 }
                 route.add(currentMarkerPosition);
 
-
-                // go through all existing markers
-                // - calculate total distance
-                // - calculate time to arrival
-
-                //update line to first marker
-
-                //add missing markers
-
-                //display Infobox next to last marker
-
-                //check for exisiting Markers
-
             }
             //time to arrival
             double avgSpeed = loc.getAverageSpeedInKmh() / 3.6;
-            if (avgSpeed > 0) {
-                timeToArrival =  avgSpeed / totalDistance;
-
-            }
-            //calculate time at arrival
-            Date now = new Date();
-            long timeAtArrival = now.getTime() + (long) timeToArrival;
-            expectedTimeOfArrival.setTime(timeAtArrival);
-
+            String timeAtArrivalString = "";
+            String timeToArrivalString = "";
             String distanceString = String.valueOf(Math.round(totalDistance)) + "m";
-            String timeToArrivalString = String.valueOf(timeToArrival * 1000) + "s" ;
+            DateFormat df = android.text.format.DateFormat.getTimeFormat(this);
+
+
+            if (avgSpeed > 0) {
+                timeToArrival = totalDistance / avgSpeed;
+
+                //Format Time To arrival
+                long s = Math.round(timeToArrival);
+                if (s > 3600) {timeToArrivalString = String.format("%dh:%02dm:%02ds", s / 3600, (s % 3600) / 60, (s % 60));}
+                else if (s > 60) {timeToArrivalString = String.format("%02dm:%02ds",  (s % 3600) / 60, (s % 60));}
+                else {timeToArrivalString = String.format("%02ds", (s % 60));}
+
+                //calculate time at arrival
+                Date now = new Date();
+                long timeAtArrival = now.getTime();
+                timeAtArrival += s*1000;
+                expectedTimeOfArrival.setTime(timeAtArrival);
+                timeAtArrivalString = df.format(expectedTimeOfArrival);
+            }
             waypointContainer.setVisibility(View.VISIBLE);
             distanceLabel.setText(distanceString);
-
             timeToArrivalLabel.setText(timeToArrivalString);
-
-
-            routeLine.setColor(Color.GREEN);
-            routeLine.setPoints(route);
-            routeLine.setInfoWindowLocation(currentMarkerPosition);
-
+            timeAtArrivalLabel.setText(timeAtArrivalString);
 
             if (!map.getOverlays().contains(routeLine)) {map.getOverlays().add(routeLine);}
+
+            if (routeLine != null) {
+                routeLine.setColor(Color.BLUE);
+                routeLine.setPoints(route);
+                routeLine.setInfoWindowLocation(currentMarkerPosition);
+            }
+
+//            if (!map.getOverlays().contains(routeLine)) {map.getOverlays().add(routeLine);}
 
         }
 
@@ -528,9 +544,63 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
+        outState.putDouble("longitude", currentPosition.getLongitude());
+        outState.putDouble("latitude", currentPosition.getLatitude());
+        outState.putBoolean("viewIsCentered", viewIsCentered);
+        if (boatMarker != null) {
+            outState.putDouble("boatLatitude", boatMarker.getPosition().getLatitude());
+            outState.putDouble("boatLongitude", boatMarker.getPosition().getLongitude());
+        }
+
+        outState.putDouble("zoomLevel", zoomLevel);
+        if (routeLine != null) {routeLine = null;}
+
+        if (markerList.size() > 0) {
+            ArrayList<GeoPoint> positionList = new ArrayList<>();
+            for (Marker m: markerList) {
+                positionList.add(m.getPosition());
+            }
+            outState.putParcelableArrayList("markers", positionList);
+
+        }
+
         super.onSaveInstanceState(outState);
-        //TODO save important variabes for screen rotation
+
     }
 
+    private void restoreState (Bundle state) {
+        currentPosition.setCoords(state.getDouble("latitude"), state.getDouble("longitude"));
+        viewIsCentered = state.getBoolean("viewIsCentered");
+        zoomLevel = state.getDouble("zoomLevel");
+
+
+        Double boatLat = 0.0;
+        Double boatLng = 0.0;
+        try {
+            boatLat = state.getDouble("boatLatitude");
+            boatLng = state.getDouble("boatLongitude");
+        } catch (NullPointerException e) {
+           Log.e(TAG, "Could not get Boat Marker coords" + e);
+        }
+        if (boatLat > 0 && boatMarker == null) {createBoatMarker(new GeoPoint(boatLat, boatLng));}
+
+      //  if (boatMarker == null) {createBoatMarker(new GeoPoint(boatLat,boatLng));}
+      //  else {boatMarker.setPosition(new GeoPoint(boatLat,boatLng));}
+
+        ArrayList<GeoPoint> positionList = new ArrayList<>();
+        try {
+            positionList = state.getParcelableArrayList("markers");
+        } catch (NullPointerException e) {
+
+        }
+
+        if (positionList != null && positionList.size() > 0) {
+            for (GeoPoint g:positionList) {
+                addPositionMarker(g);
+            }
+        }
+
+
+    }
 
 }

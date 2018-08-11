@@ -190,13 +190,15 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:padding="4dp"
+        >
 
     <TextView
         android:id="@+id/distance_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="4dp"
+        android:layout_margin="2dp"
         android:gravity="top|start"
         android:text="@string/distance_label" />
 
@@ -206,11 +208,32 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/distance_label"
         android:layout_centerHorizontal="true"
-        android:layout_margin="4dp"
+        android:layout_margin="2dp"
         android:textSize="14sp"
         android:textStyle="bold"
-        tools:text="8.4" />
+        tools:text="2km" />
 
+        <TextView
+            android:id="@+id/timeAtArrival_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@id/distance_text_view"
+            android:layout_margin="2dp"
+            android:text="@string/timeAtArrival_label"
+
+            />
+
+        <TextView
+            android:id="@+id/timeAtArrival_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignBaseline="@+id/timeAtArrival_label"
+            android:layout_below="@id/distance_text_view"
+            android:layout_margin="2dp"
+            android:textStyle="bold"
+            tools:text="21:30h" />
 
 
     <TextView
@@ -218,8 +241,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
-        android:layout_below="@id/distance_text_view"
-        android:layout_margin="4dp"
+        android:layout_below="@id/timeAtArrival_text_view"
+        android:layout_margin="2dp"
         android:text="@string/timeToArrival_label"
 
         />
@@ -229,10 +252,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
-        android:layout_below="@id/distance_text_view"
-        android:layout_margin="4dp"
+        android:layout_alignBaseline="@+id/timeToArrival_label"
+        android:layout_below="@id/timeAtArrival_text_view"
+        android:layout_margin="2dp"
         android:textStyle="bold"
-        tools:text="31° NE" />
+        tools:text="25min" />
+
+
 
 
     </RelativeLayout>
