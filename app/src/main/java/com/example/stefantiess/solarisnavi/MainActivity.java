@@ -2,6 +2,7 @@ package com.example.stefantiess.solarisnavi;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -9,6 +10,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
@@ -20,6 +22,8 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 import org.osmdroid.api.IMapController;
@@ -70,6 +74,8 @@ public class MainActivity extends Activity {
     ArrayList<Marker> markerList = new ArrayList<>();
     Polyline routeLine = null;
     FloatingActionButton removeWaypointButton;
+    private ContentResolver cResolver;
+
 
 
     View.OnClickListener removeSingleWaypointListener = new View.OnClickListener() {
@@ -100,6 +106,13 @@ public class MainActivity extends Activity {
         //handle permissions first
         getLocationPermission();
 
+
+        //Set Brightness of screen to max;
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        WindowManager.LayoutParams params = getWindow().getAttributes();
+        params.screenBrightness = 1.0f;
+        getWindow().setAttributes(params);
+
         //load/initialize the osmdroid configuration, this can be done
         Context ctx = getApplicationContext();
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx));
@@ -107,6 +120,8 @@ public class MainActivity extends Activity {
         //inflate the Map View
         setContentView(R.layout.activity_main);
         map = (MapView) findViewById(R.id.map);
+        mapController = map.getController();
+
         //add Buttons
         FloatingActionButton zoomInButton = findViewById(R.id.zoom_in);
         FloatingActionButton zoomOutButton = findViewById(R.id.zoom_out);
@@ -252,7 +267,6 @@ public class MainActivity extends Activity {
         map.setBuiltInZoomControls(false);
         map.setMultiTouchControls(true);
         map.getOverlays().add(seaMap);
-        mapController = map.getController();
         mapController.setZoom(zoomLevel); //max of SeaMap is 18, (min 3)
 
         // If a user touches the map for scrolling, deactive the follow mode
@@ -357,7 +371,8 @@ public class MainActivity extends Activity {
         //if you make changes to the configuration, use
         //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         //Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this));
-        if (map != null) {map.onResume();} //needed for compass, my location overlays, v6.0.0 and up
+        //TODO: Test to deactivate onResume to avoid crashes with overlays
+       // map.onResume();//needed for compass, my location overlays, v6.0.0 and up
     }
 
     public void onPause(){
@@ -366,7 +381,7 @@ public class MainActivity extends Activity {
         //if you make changes to the configuration, use
         //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         //Configuration.getInstance().save(this, prefs);
-        map.onPause();  //needed for compass, my location overlays, v6.0.0 and up
+        //map.onPause();  //needed for compass, my location overlays, v6.0.0 and up
     }
 
     private String parseCardinalDirection(float d) {

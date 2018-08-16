@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     android:id="@+id/mainContainer"
     android:animateLayoutChanges="true"
+    android:keepScreenOn="true"
     android:fitsSystemWindows="true"
     android:background="@android:color/darker_gray"
     tools:context="com.example.stefantiess.solarisnavi.MainActivity">
