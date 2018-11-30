@@ -36,6 +36,17 @@
         app:backgroundTint="@android:color/holo_red_light" />
 
     <android.support.design.widget.FloatingActionButton
+        android:id="@+id/downloadMap"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="216dp"
+        android:layout_marginRight="24dp"
+        android:src="@drawable/ic_download"
+        android:tint="@color/colorPrimaryDark"
+        app:backgroundTint="@color/colorAccent" />
+
+    <android.support.design.widget.FloatingActionButton
         android:id="@+id/center_on_position"
         android:layout_width="56dp"
         android:layout_height="56dp"

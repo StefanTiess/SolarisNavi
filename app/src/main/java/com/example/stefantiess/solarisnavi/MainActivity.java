@@ -4,13 +4,13 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.preference.PreferenceManager;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
@@ -22,26 +22,25 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.TextView;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
+import org.osmdroid.config.IConfigurationProvider;
 import org.osmdroid.events.MapEventsReceiver;
 import org.osmdroid.tileprovider.MapTileProviderBasic;
+import org.osmdroid.tileprovider.constants.OpenStreetMapTileProviderConstants;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MapEventsOverlay;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.TilesOverlay;
-import org.osmdroid.views.overlay.infowindow.InfoWindow;
 
 import java.text.DateFormat;
-import java.text.Format;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -55,6 +54,8 @@ public class MainActivity extends Activity {
     GeoPoint startPoint = new GeoPoint(52.366988, 13.643645);
     GeoPoint currentPosition = startPoint;
     private static final int LOCATION_PERMISSION_CODE = 123;
+    private static final int DOWNLOAD_RADIUS = 20000;
+
     private boolean hasLocationPermission = false;
     private boolean viewIsCentered = true;
     Marker boatMarker = null;
@@ -70,11 +71,13 @@ public class MainActivity extends Activity {
     CardView waypointContainer =null;
     CoordinatorLayout containerView;
     CardView dashboardView;
-    AccuracyOverlay accuracyOverlay = null;
     ArrayList<Marker> markerList = new ArrayList<>();
     Polyline routeLine = null;
     FloatingActionButton removeWaypointButton;
+    FloatingActionButton downloadButton;
     private ContentResolver cResolver;
+    MapDownloader downloader = null;
+    List<Overlay> overlays = null;
 
 
 
@@ -101,11 +104,12 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        IConfigurationProvider config = Configuration.getInstance();
+        config.setExpirationOverrideDuration(OpenStreetMapTileProviderConstants.ONE_YEAR);
 
 
         //handle permissions first
         getLocationPermission();
-
 
         //Set Brightness of screen to max;
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -119,14 +123,18 @@ public class MainActivity extends Activity {
 
         //inflate the Map View
         setContentView(R.layout.activity_main);
-        map = (MapView) findViewById(R.id.map);
-        mapController = map.getController();
+            map = (MapView) findViewById(R.id.map);
+            mapController = map.getController();
+
+        //Attach the downloader
+        downloader = new MapDownloader(map);
 
         //add Buttons
         FloatingActionButton zoomInButton = findViewById(R.id.zoom_in);
         FloatingActionButton zoomOutButton = findViewById(R.id.zoom_out);
         FloatingActionButton centerViewButton = findViewById(R.id.center_on_position);
         removeWaypointButton = findViewById(R.id.remove_waypoint);
+        downloadButton = findViewById(R.id.downloadMap);
 
         //Initialize Dashboard
         speedLabel = findViewById(R.id.speed_text_view);
@@ -175,6 +183,25 @@ public class MainActivity extends Activity {
         });
 
 
+        downloadButton.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                clearCache();
+                return true;
+            }
+
+
+        });
+
+        downloadButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+           public void onClick(View v) {
+                syncMapCache();
+
+            }
+        });
+
+
          //now the ui should be initiated and follow the users location
     }
 
@@ -205,7 +232,6 @@ public class MainActivity extends Activity {
 
         //
 
-        //TODO insert scale circle for Accuracy around boat
 
         // Format the direction and append the Cardinal Direction (for example NE)
         String directionStr = String.format(Locale.getDefault(), "%.1f", loc.getDirection());
@@ -242,6 +268,17 @@ public class MainActivity extends Activity {
 
     }
 
+    private void syncMapCache() {
+        //Uncomment if download should only take place with wifi.
+       // ConnectivityManager cm = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
+       // NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+       // if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
+            if (downloader != null) {
+                downloader.downloadMap(this, DOWNLOAD_RADIUS, currentPosition);
+            }
+        //}
+    }
+
     private void createBoatMarker(GeoPoint position) {
         boatMarker = new Marker(map);
         boatMarker.setIcon(getDrawable(R.drawable.ic_boat_marker_20));
@@ -251,7 +288,6 @@ public class MainActivity extends Activity {
     }
 
     private void initializeMap() {
-
         // Set up Open Sea Map Overlays
         MapTileProviderBasic mProvider = new MapTileProviderBasic(this);
         TilesOverlay seaMap = new TilesOverlay(mProvider, this);
@@ -259,6 +295,7 @@ public class MainActivity extends Activity {
         seaMap.setLoadingBackgroundColor(Color.TRANSPARENT);
         seaMap.setLoadingDrawable(null);
         mProvider.setTileSource(TileSourceFactory.OPEN_SEAMAP);
+
 
         //Configure Base Map View
 
@@ -271,6 +308,7 @@ public class MainActivity extends Activity {
 
         // If a user touches the map for scrolling, deactive the follow mode
         // so it does not jump back to center whenever there is a new position
+
         map.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -369,19 +407,21 @@ public class MainActivity extends Activity {
         super.onResume();
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
-        //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        //Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this));
-        //TODO: Test to deactivate onResume to avoid crashes with overlays
-       // map.onResume();//needed for compass, my location overlays, v6.0.0 and up
+
+
+      SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+      Configuration.getInstance().load(this, prefs);
+      map.onResume();//needed for compass, my location overlays, v6.0.0 and up
     }
 
     public void onPause(){
         super.onPause();
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
-        //SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        //Configuration.getInstance().save(this, prefs);
-        //map.onPause();  //needed for compass, my location overlays, v6.0.0 and up
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        Configuration.getInstance().save(this, prefs);
+        map.onPause();  //needed for compass, my location overlays, v6.0.0 and up
+
     }
 
     private String parseCardinalDirection(float d) {
@@ -508,7 +548,7 @@ public class MainActivity extends Activity {
 
             }
             //time to arrival
-            double avgSpeed = loc.getAverageSpeedInKmh() / 3.6;
+            double avgSpeed = loc.getAverageSpeedInMeterPerSecond();
             String timeAtArrivalString = "";
             String timeToArrivalString = "";
             String distanceString = String.valueOf(Math.round(totalDistance)) + "m";
@@ -557,6 +597,15 @@ public class MainActivity extends Activity {
         dashboardView.setVisibility(View.VISIBLE);
     }
 
+    private void clearCache() {
+        if (downloader != null) { downloader.cancelAllJobs();}
+
+        //map.getTileProvider().clearTileCache();
+
+    }
+
+
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         outState.putDouble("longitude", currentPosition.getLongitude());
@@ -568,7 +617,7 @@ public class MainActivity extends Activity {
         }
 
         outState.putDouble("zoomLevel", zoomLevel);
-        if (routeLine != null) {routeLine = null;}
+        //if (routeLine != null) {routeLine = null;}
 
         if (markerList.size() > 0) {
             ArrayList<GeoPoint> positionList = new ArrayList<>();
@@ -578,6 +627,9 @@ public class MainActivity extends Activity {
             outState.putParcelableArrayList("markers", positionList);
 
         }
+        //map.getOverlays().clear();
+        map.invalidate();
+
 
         super.onSaveInstanceState(outState);
 
@@ -617,5 +669,7 @@ public class MainActivity extends Activity {
 
 
     }
+
+
 
 }

@@ -68,7 +68,7 @@ public class LocationHelper {
         return mSpeedInKmh;
     }
 
-    public double getAverageSpeedInKmh() {
+    public double getAverageSpeedInMeterPerSecond() {
 
         return mAverageSpeed;
     }

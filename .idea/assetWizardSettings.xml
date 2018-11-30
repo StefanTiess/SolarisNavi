@@ -23,7 +23,7 @@
                                           <PersistentState>
                                             <option name="values">
                                               <map>
-                                                <entry key="url" value="jar:file:/C:/Program%20Files/Android/Android%20Studio/plugins/android/lib/android.jar!/images/material_design_icons/communication/ic_location_on_black_24dp.xml" />
+                                                <entry key="url" value="jar:file:/C:/Program%20Files/Android/Android%20Studio/plugins/android/lib/android.jar!/images/material_design_icons/file/ic_cloud_download_black_24dp.xml" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -34,8 +34,7 @@
                                   <option name="values">
                                     <map>
                                       <entry key="imageAsset" value="C:\Android\Projects\SolarisNavi\app\src\main\res\drawable-xxhdpi\ic_remove_waypoint.png" />
-                                      <entry key="outputName" value="ic_position_marker" />
-                                      <entry key="theme" value="CUSTOM" />
+                                      <entry key="outputName" value="ic_download" />
                                       <entry key="themeColor" value="3ee558" />
                                     </map>
                                   </option>
@@ -123,7 +122,7 @@
                                 <PersistentState>
                                   <option name="values">
                                     <map>
-                                      <entry key="url" value="jar:file:/C:/Program%20Files/Android/Android%20Studio/plugins/android/lib/android.jar!/images/material_design_icons/content/ic_add_circle_black_24dp.xml" />
+                                      <entry key="url" value="jar:file:/C:/Program%20Files/Android/Android%20Studio/plugins/android/lib/android.jar!/images/material_design_icons/file/ic_cloud_download_black_24dp.xml" />
                                     </map>
                                   </option>
                                 </PersistentState>
@@ -134,11 +133,9 @@
                         <option name="values">
                           <map>
                             <entry key="color" value="be9b7b" />
-                            <entry key="height" value="48" />
-                            <entry key="outputName" value="ic_plus_48" />
+                            <entry key="outputName" value="ic_download" />
                             <entry key="overrideSize" value="true" />
                             <entry key="sourceFile" value="C:\Users\Stefan Tiess" />
-                            <entry key="width" value="48" />
                           </map>
                         </option>
                       </PersistentState>
