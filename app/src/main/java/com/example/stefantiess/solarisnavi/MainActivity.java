@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -229,9 +230,6 @@ public class MainActivity extends Activity {
             boatMarker.setRotation(loc.getDirection());
         }
 
-        //
-
-
         // Format the direction and append the Cardinal Direction (for example NE)
         String directionStr = String.format(Locale.getDefault(), "%.1f", loc.getDirection());
         directionStr += parseCardinalDirection(loc.getDirection());
@@ -260,7 +258,7 @@ public class MainActivity extends Activity {
         if (viewIsCentered) {
             mapController.setCenter(loc.getCurrentPosition());
         }
-
+        //If there are markers on the map, update them with each new position
         if (markerList.size() > 0) {
             //if a waypoint marker is reached by the boat
             if (markerList.size() > 1) {
@@ -275,6 +273,8 @@ public class MainActivity extends Activity {
 
     }
 
+
+    //Check for conditions if the next waypoint is close enough to be removed from the path
     private boolean markerReached(Marker marker, Marker nextMarker, Double direction) {
         GeoPoint markerPosition = marker.getPosition();
         boolean isBehindMe = false;
@@ -434,8 +434,6 @@ public class MainActivity extends Activity {
         super.onResume();
         //this will refresh the osmdroid configuration on resuming.
         //if you make changes to the configuration, use
-
-
       SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
       Configuration.getInstance().load(this, prefs);
       map.onResume();//needed for compass, my location overlays, v6.0.0 and up
@@ -469,8 +467,40 @@ public class MainActivity extends Activity {
         Marker marker = new Marker(map);
         marker.setPosition(p);
 
-        marker.setIcon(getDrawable(R.drawable.ic_position_marker));
-        marker.setAnchor(Marker.ANCHOR_CENTER,Marker.ANCHOR_BOTTOM);
+        marker.setIcon(getDrawable(R.drawable.ic_location_marker_drag));
+        marker.setAnchor(Marker.ANCHOR_CENTER,Marker.ANCHOR_CENTER);
+        marker.setDraggable(true);
+
+        marker.setOnMarkerDragListener(new Marker.OnMarkerDragListener() {
+            @Override
+            public void onMarkerDrag(Marker marker) {
+                drawMarkers();
+            }
+
+            @Override
+            public void onMarkerDragEnd(Marker marker) {
+                marker.setIcon(getDrawable(R.drawable.ic_location_marker_drag));
+                marker.setAnchor(Marker.ANCHOR_CENTER,Marker.ANCHOR_CENTER);
+
+            }
+
+            @Override
+            public void onMarkerDragStart(Marker marker) {
+                marker.setDragOffset(9);
+            marker.setIcon(getDrawable(R.drawable.ic_location_marker_drag));
+                marker.setAnchor(Marker.ANCHOR_CENTER,Marker.ANCHOR_CENTER);
+            }
+        });
+       //remove Marker when tapped
+       marker.setOnMarkerClickListener(new Marker.OnMarkerClickListener() {
+           @Override
+           public boolean onMarkerClick(Marker marker, MapView mapView) {
+               map.getOverlays().remove(marker);
+               markerList.remove(marker);
+               drawMarkers();
+               return false;
+           }
+       });
 
         if (markerList.size() == 0) {
             removeWaypointButton.setVisibility(View.VISIBLE);
