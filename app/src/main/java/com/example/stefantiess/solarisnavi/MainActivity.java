@@ -200,8 +200,6 @@ public class MainActivity extends Activity {
 
             }
         });
-
-
          //now the ui should be initiated and follow the users location
     }
 
@@ -217,6 +215,7 @@ public class MainActivity extends Activity {
         if (loc == null) {return;}
 
         currentPosition = loc.getCurrentPosition();
+        Double direction = Float.valueOf(loc.getDirection()).doubleValue();
 
         if (dashboardView.getVisibility() == View.GONE) {
             addDashboard();
@@ -263,9 +262,37 @@ public class MainActivity extends Activity {
         }
 
         if (markerList.size() > 0) {
+            //if a waypoint marker is reached by the boat
+            if (markerList.size() > 1) {
+                Marker firstMarker = markerList.get(0);
+                if (markerReached(firstMarker, markerList.get(1), direction)) {
+                    map.getOverlays().remove(firstMarker);
+                    markerList.remove(0);
+                }
+            }
             drawMarkers();
         }
 
+    }
+
+    private boolean markerReached(Marker marker, Marker nextMarker, Double direction) {
+        GeoPoint markerPosition = marker.getPosition();
+        boolean isBehindMe = false;
+        boolean isCloseBy = false;
+        Double BearingToFirstMarker = 0.0;
+        Double relativeBearing = currentPosition.bearingTo(markerPosition)-direction;
+        if (relativeBearing < 0) {BearingToFirstMarker = 360+relativeBearing;}
+        else BearingToFirstMarker=relativeBearing;
+
+
+
+        //if the marker is closer than 50m and behind the boat, remove it
+        if (BearingToFirstMarker > 90 && BearingToFirstMarker < 270) {isBehindMe = true;}
+        if (currentPosition.distanceToAsDouble(markerPosition) < 50) {isCloseBy = true;}
+        //if the marker is closer than 5m, remove it in every case.
+        if (currentPosition.distanceToAsDouble(markerPosition) < 5) {return true;}
+
+        return (isBehindMe && isCloseBy);
     }
 
     private void syncMapCache() {
@@ -451,7 +478,6 @@ public class MainActivity extends Activity {
             removeWaypointButton.setOnClickListener(removeSingleWaypointListener);
             removeWaypointButton.setOnLongClickListener(removeAllWaypointsListener);
         }
-
         markerList.add(marker);
 
         drawMarkers();
