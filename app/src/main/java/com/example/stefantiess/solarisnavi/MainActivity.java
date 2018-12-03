@@ -11,6 +11,7 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
@@ -32,7 +33,9 @@ import org.osmdroid.config.IConfigurationProvider;
 import org.osmdroid.events.MapEventsReceiver;
 import org.osmdroid.tileprovider.MapTileProviderBasic;
 import org.osmdroid.tileprovider.constants.OpenStreetMapTileProviderConstants;
+import org.osmdroid.tileprovider.modules.SqliteArchiveTileWriter;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.MapEventsOverlay;
@@ -41,6 +44,8 @@ import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.TilesOverlay;
 
+
+import java.io.File;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -79,6 +84,8 @@ public class MainActivity extends Activity {
     private ContentResolver cResolver;
     MapDownloader downloader = null;
     List<Overlay> overlays = null;
+    private SqliteArchiveTileWriter writer = null;
+
 
 
 
@@ -128,7 +135,12 @@ public class MainActivity extends Activity {
             mapController = map.getController();
 
         //Attach the downloader
-        downloader = new MapDownloader(map);
+        String outputName = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "osmdroid" + File.separator + "archive.db";
+        try {writer = new SqliteArchiveTileWriter(outputName);} catch (Exception e) {
+            Log.e("Map Dowload Error" , e.toString());
+        }
+        downloader = new MapDownloader(map, writer);
+        downloader.cancelAllJobs();
 
         //add Buttons
         FloatingActionButton zoomInButton = findViewById(R.id.zoom_in);
@@ -297,11 +309,16 @@ public class MainActivity extends Activity {
 
     private void syncMapCache() {
         //Uncomment if download should only take place with wifi.
+        BoundingBox downloadArea = map.getBoundingBox();
+        Double currentZoom = map.getZoomLevelDouble();
+
+
+
        // ConnectivityManager cm = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
        // NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
        // if (activeNetwork.getType() == ConnectivityManager.TYPE_WIFI) {
             if (downloader != null) {
-                downloader.downloadMap(this, DOWNLOAD_RADIUS, currentPosition);
+                downloader.downloadMap(this, downloadArea, currentZoom.intValue());
             }
         //}
     }
@@ -326,7 +343,7 @@ public class MainActivity extends Activity {
 
         //Configure Base Map View
 
-        map.setTileSource(TileSourceFactory.HIKEBIKEMAP);
+        map.setTileSource(TileSourceFactory.MAPNIK);
         map.setMaxZoomLevel(18.0);
         map.setBuiltInZoomControls(false);
         map.setMultiTouchControls(true);
@@ -352,13 +369,12 @@ public class MainActivity extends Activity {
             @Override
             public boolean singleTapConfirmedHelper(GeoPoint p) {
                 Log.v("Maps Event Receiver", "single Tap");
-
-                return false;
+                addPositionMarker(p);
+                return true;
             }
 
             @Override
             public boolean longPressHelper(GeoPoint p) {
-                addPositionMarker(p);
                 return false;
             }
         };
@@ -471,6 +487,7 @@ public class MainActivity extends Activity {
         marker.setAnchor(Marker.ANCHOR_CENTER,Marker.ANCHOR_CENTER);
         marker.setDraggable(true);
 
+
         marker.setOnMarkerDragListener(new Marker.OnMarkerDragListener() {
             @Override
             public void onMarkerDrag(Marker marker) {
@@ -498,7 +515,7 @@ public class MainActivity extends Activity {
                map.getOverlays().remove(marker);
                markerList.remove(marker);
                drawMarkers();
-               return false;
+               return true;
            }
        });
 
